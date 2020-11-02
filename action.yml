@@ -1,6 +1,6 @@
-name: "Deployment Action"
-description: "Creates a GitHub Deployment"
-author: "chrnorm"
+name: "Github Deployment Action"
+description: "Create a GitHub Deployment"
+author: "louy"
 branding:
   icon: arrow-up
   color: black
