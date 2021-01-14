@@ -31,8 +31,12 @@ async function run() {
     const autoMergeStringInput = core.getInput("auto_merge", {
       required: false,
     });
+    const transientEnvironmentStringInput = core.getInput("transient_environment", {
+      required: false,
+    });
 
     const auto_merge: boolean = autoMergeStringInput === "true";
+    const transient_environment = transientEnvironmentStringInput === "true";
 
     const deployment = await octokit.repos.createDeployment({
       owner: context.repo.owner,
@@ -41,7 +45,7 @@ async function run() {
       sha: sha,
       required_contexts: [],
       environment,
-      transient_environment: true,
+      transient_environment,
       auto_merge,
       description,
     });

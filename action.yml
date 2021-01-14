@@ -28,6 +28,14 @@ inputs:
     description: "The name of the environment for the deployment"
     default: "production"
     required: false
+  transient_environment:
+    description: "Whether or not the environment is transient"
+    required: false
+    default: "false"
+  auto_merge:
+    description: "Enable auto_merge"
+    required: false
+    default: "false"
 outputs:
   deployment_id:
     description: "The ID of the created deployment"
