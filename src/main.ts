@@ -13,14 +13,33 @@ type DeploymentState =
 async function run() {
   try {
     const context = github.context;
-    const logUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${context.sha}/checks`;
-
     const token = core.getInput("token", { required: true });
     const octokit = github.getOctokit(token);
 
-    const headRef = process.env.GITHUB_HEAD_REF;
-    const ref = core.getInput("ref", { required: false }) || headRef || context.ref;
-    const sha = core.getInput("sha", { required: false }) || context.sha;
+    let contextSha = context.sha;
+    let contextRef = context.ref;
+
+    core.debug(JSON.stringify(context.payload, null, 2));
+
+    if (context.payload.pull_request) {
+      // Pull requests can be tricky with github actions as the GITHUB_HEAD_REF will
+      // actually point to a merge commit with the main branch, in order to display
+      // the deployment on the pull request page, the 'ref' needs to be the head
+      // ref of the latest commit on the head branch of the PR and not the merge head
+      // ref(GITHUB_HEAD_REF)
+      const pr = await octokit.pulls.get({
+        ...context.repo,
+        pull_number: context.payload.pull_request.number,
+      });
+      core.debug(`PR Head: ${JSON.stringify(pr.data.head)}`);
+      contextSha = pr.data.head.sha;
+      contextRef = contextSha;
+    }
+
+    const ref = core.getInput("ref", { required: false }) || contextRef;
+    const sha = core.getInput("sha", { required: false }) || contextSha;
+    const logUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${sha}/checks`;
+
     const url = core.getInput("target_url", { required: false }) || logUrl;
     const environment =
       core.getInput("environment", { required: false }) || "production";
@@ -39,9 +58,6 @@ async function run() {
     const auto_merge: boolean = autoMergeStringInput === "true";
     const transient_environment = transientEnvironmentStringInput === "true";
 
-    core.info(`auto_merge: ${auto_merge}`);
-    core.info(`transient_environment: ${transient_environment}`);
-
     const deployment = await octokit.repos.createDeployment({
       owner: context.repo.owner,
       repo: context.repo.repo,
@@ -50,7 +66,7 @@ async function run() {
       required_contexts: [],
       environment,
       transient_environment,
-      auto_merge: false,
+      auto_merge,
       description,
     });
 
