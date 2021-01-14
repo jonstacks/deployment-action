@@ -18,7 +18,8 @@ async function run() {
     const token = core.getInput("token", { required: true });
     const octokit = github.getOctokit(token);
 
-    const ref = core.getInput("ref", { required: false }) || context.ref;
+    const headRef = process.env.GITHUB_HEAD_REF;
+    const ref = core.getInput("ref", { required: false }) || headRef || context.ref;
     const sha = core.getInput("sha", { required: false }) || context.sha;
     const url = core.getInput("target_url", { required: false }) || logUrl;
     const environment =
@@ -38,6 +39,9 @@ async function run() {
     const auto_merge: boolean = autoMergeStringInput === "true";
     const transient_environment = transientEnvironmentStringInput === "true";
 
+    core.info(`auto_merge: ${auto_merge}`);
+    core.info(`transient_environment: ${transient_environment}`);
+
     const deployment = await octokit.repos.createDeployment({
       owner: context.repo.owner,
       repo: context.repo.repo,
@@ -46,7 +50,7 @@ async function run() {
       required_contexts: [],
       environment,
       transient_environment,
-      auto_merge,
+      auto_merge: false,
       description,
     });
 
